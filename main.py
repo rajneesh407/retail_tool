@@ -1,33 +1,14 @@
 from fastapi import FastAPI, Query, HTTPException
 from pydantic import BaseModel
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 app = FastAPI(
     title="Google Store API",
-    description="Get all the items in Google Store.",
     version="1.0.0",
+    description="Get all the items in Google Store.",
 )
 
-
-# Request model
-class GetItemsRequest(BaseModel):
-    item: str
-
-
-# Response model
-class ItemDetail(BaseModel):
-    name: str
-    price: str
-    release_date: str
-    description: str
-    features: List[str]
-
-
-class GetItemsResponse(BaseModel):
-    results: List[ItemDetail]
-
-
-# In-memory store data
+# Store inventory
 store_data: Dict[str, List[Dict[str, Any]]] = {
     "phone": [
         {
@@ -40,7 +21,10 @@ store_data: Dict[str, List[Dict[str, Any]]] = {
                 "Tensor G3 processor",
                 "Android 14",
                 "50MP dual camera",
+                "4500mAh battery",
+                "128GB / 256GB storage",
             ],
+            "quantity": 25,
         },
         {
             "name": "Pixel 7a",
@@ -52,7 +36,10 @@ store_data: Dict[str, List[Dict[str, Any]]] = {
                 "Tensor G2 processor",
                 "Wireless charging",
                 "Face unlock",
+                "4385mAh battery",
+                "64MP rear camera",
             ],
+            "quantity": 40,
         },
         {
             "name": "Pixel Fold",
@@ -60,11 +47,14 @@ store_data: Dict[str, List[Dict[str, Any]]] = {
             "release_date": "2023-06-27",
             "description": "Google's first foldable phone with multitasking capabilities.",
             "features": [
-                "7.6-inch inner foldable display",
+                "7.6-inch foldable OLED display",
                 "5.8-inch cover screen",
                 "Tensor G2 chip",
                 "Triple rear cameras",
+                "4821mAh battery",
+                "12GB RAM",
             ],
+            "quantity": 10,
         },
     ],
     "watch": [
@@ -72,14 +62,31 @@ store_data: Dict[str, List[Dict[str, Any]]] = {
             "name": "Pixel Watch 2",
             "price": "$349",
             "release_date": "2023-10-04",
-            "description": "Refined design and improved battery life in the second-gen Pixel Watch.",
+            "description": "Refined design and improved battery life.",
             "features": [
-                "Heart rate and stress monitoring",
+                "Heart rate monitor",
                 "Sleep tracking",
                 "Wear OS 4",
                 "Fast charging",
+                "306mAh battery",
+                "Aluminum case",
             ],
-        }
+            "quantity": 50,
+        },
+        {
+            "name": "Pixel Watch (1st Gen)",
+            "price": "$299",
+            "release_date": "2022-10-06",
+            "description": "Google's first smartwatch.",
+            "features": [
+                "Fitbit integration",
+                "Gorilla Glass 5",
+                "Water resistant (5 ATM)",
+                "294mAh battery",
+                "Wireless charging",
+            ],
+            "quantity": 20,
+        },
     ],
     "headphones": [
         {
@@ -90,25 +97,84 @@ store_data: Dict[str, List[Dict[str, Any]]] = {
             "features": [
                 "Active Noise Cancellation",
                 "Transparency mode",
-                "11 hours battery (buds only)",
-                "Multipoint connection",
+                "11 hours battery life",
+                "Multipoint Bluetooth",
+                "Wireless charging",
             ],
-        }
+            "quantity": 70,
+        },
+        {
+            "name": "Pixel Buds A-Series",
+            "price": "$99",
+            "release_date": "2021-06-17",
+            "description": "Budget earbuds with rich sound and clear calls.",
+            "features": [
+                "5 hours battery life",
+                "Sweat and water resistant",
+                "Adaptive sound",
+                "Google Assistant support",
+            ],
+            "quantity": 90,
+        },
     ],
 }
 
+shopping_cart: Dict[str, List[Dict[str, Any]]] = {}
 
-@app.post("/get_items", response_model=GetItemsResponse)
-async def get_items(
-    session_id: str = Query(..., description="ID of session to return"),
-    payload: GetItemsRequest = ...,
-):
-    item_category = payload.item.lower()
-    results = store_data.get(item_category)
 
+# Models
+class GetItemsInput(BaseModel):
+    item: str
+
+
+class ItemDetail(BaseModel):
+    name: str
+    price: str
+    release_date: str
+    description: str
+    features: List[str]
+    quantity: int
+
+
+class ShoppingCartItem(BaseModel):
+    item: str
+    quantity: int
+
+
+# Routes
+@app.post(
+    "/get_items",
+    operation_id="get_items",
+    summary="Get all the items from Google Store.",
+)
+def get_items(input: GetItemsInput, session_id: Optional[str] = Query(default=None)):
+    item_type = input.item.lower()
+    results = store_data.get(item_type)
     if results is None:
-        raise HTTPException(
-            status_code=404, detail="Cannot reach endpoint (may be empty)"
-        )
-
+        return {"results": []}
     return {"results": results}
+
+
+@app.post("/add_to_shopping_cart", operation_id="add_to_shopping_cart")
+def add_to_cart(input: ShoppingCartItem, session_id: str = Query(...)):
+    if session_id not in shopping_cart:
+        shopping_cart[session_id] = []
+    shopping_cart[session_id].append({"item": input.item, "quantity": input.quantity})
+    return {"results": [f"Added {input.quantity} of {input.item} to cart."]}
+
+
+@app.post("/remove_from_shopping_cart", operation_id="remove_from_shopping_cart")
+def remove_from_cart(input: ShoppingCartItem, session_id: str = Query(...)):
+    cart = shopping_cart.get(session_id, [])
+    updated_cart = [
+        entry
+        for entry in cart
+        if not (entry["item"] == input.item and entry["quantity"] == input.quantity)
+    ]
+    shopping_cart[session_id] = updated_cart
+    return {"results": [f"Removed {input.quantity} of {input.item} from cart."]}
+
+
+@app.post("/view_shopping_cart", operation_id="view_shopping_cart")
+def view_cart(session_id: str = Query(...)):
+    return {"results": shopping_cart.get(session_id, [])}
