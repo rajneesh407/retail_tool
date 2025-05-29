@@ -1,34 +1,37 @@
-from fastapi import FastAPI, Request, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException
 from pydantic import BaseModel
 from typing import List
 
 app = FastAPI(
     title="Google Store API",
-    version="1.0.0",
     description="Get all the items in Google Store.",
+    version="1.0.0",
+    openapi_url="/openapi.json",
+    servers=[{"url": "https://retail-tool.onrender.com"}],
 )
 
-# Dummy store items
-store_data = {
-    "phone": ["Pixel 8", "Pixel 7a", "Pixel Fold"],
-    "watch": ["Pixel Watch", "Pixel Watch 2"],
-    "headphones": ["Pixel Buds Pro", "Pixel Buds A-Series"],
-}
 
-
-class ItemRequest(BaseModel):
+class GetItemsRequest(BaseModel):
     item: str
 
 
-class ItemResponse(BaseModel):
-    results: List[str]
-
-
-@app.post("/get_items", response_model=ItemResponse)
+@app.post("/get_items")
 async def get_items(
-    request: ItemRequest,
     session_id: str = Query(..., description="ID of session to return"),
+    payload: GetItemsRequest = ...,
 ):
-    item_type = request.item.lower()
-    results = store_data.get(item_type, [])
+    # Simple example items data
+    store_data = {
+        "phone": ["Pixel 8", "Pixel 7a", "Pixel Fold"],
+        "watch": ["Pixel Watch 2", "Pixel Watch 1"],
+        "headphones": ["Pixel Buds Pro", "Pixel Buds A-Series"],
+    }
+
+    results = store_data.get(payload.item.lower())
+    if results is None:
+        # Item category not found, return 404
+        raise HTTPException(
+            status_code=404, detail="Cannot reach endpoint (may be empty)"
+        )
+
     return {"results": results}
