@@ -141,6 +141,18 @@ class ShoppingCartItem(BaseModel):
     quantity: int
 
 
+def update_inventory(item_name: str, quantity: int) -> bool:
+    for category_items in store_data.values():
+        for item in category_items:
+            if item["name"].lower() == item_name.lower():
+                if item["quantity"] >= quantity:
+                    item["quantity"] -= quantity
+                    return True
+                else:
+                    return False
+    return False
+
+
 # Routes
 @app.post(
     "/get_items",
@@ -178,3 +190,29 @@ def remove_from_cart(input: ShoppingCartItem, session_id: str = Query(...)):
 @app.post("/view_shopping_cart", operation_id="view_shopping_cart")
 def view_cart(session_id: str = Query(...)):
     return {"results": shopping_cart.get(session_id, [])}
+
+
+@app.post(
+    "/place_order",
+    operation_id="place_order",
+    summary="Place an order of the items in the shopping cart.",
+)
+def place_order(session_id: str = Query(...)):
+    cart = shopping_cart.get(session_id, [])
+    if not cart:
+        return {"results": ["Your cart is empty."]}
+
+    results = []
+    for entry in cart:
+        item_name = entry["item"]
+        quantity = entry["quantity"]
+        success = update_inventory(item_name, quantity)
+        if success:
+            results.append(f"Ordered {quantity} of {item_name}.")
+        else:
+            results.append(
+                f"Failed to order {quantity} of {item_name}: Not enough stock."
+            )
+
+    shopping_cart[session_id] = []
+    return {"results": results}
