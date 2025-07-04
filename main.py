@@ -153,7 +153,14 @@ def update_inventory(item_name: str, quantity: int) -> bool:
     return False
 
 
-# Routes
+def get_inventory_quantity(item_name: str) -> Optional[int]:
+    for category_items in store_data.values():
+        for item in category_items:
+            if item["name"].lower() == item_name.lower():
+                return item["quantity"]
+    return None
+
+
 @app.post(
     "/get_items",
     operation_id="get_items",
@@ -169,8 +176,25 @@ def get_items(input: GetItemsInput, session_id: Optional[str] = Query(default=No
 
 @app.post("/add_to_shopping_cart", operation_id="add_to_shopping_cart")
 def add_to_cart(input: ShoppingCartItem, session_id: str = Query(...)):
+    if input.quantity <= 0:
+        raise HTTPException(
+            status_code=400, detail="Quantity must be greater than zero."
+        )
+
+    available_quantity = get_inventory_quantity(input.item)
+    if available_quantity is None:
+        raise HTTPException(
+            status_code=404, detail=f"Item '{input.item}' not found in inventory."
+        )
+    if input.quantity > available_quantity:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Only {available_quantity} of '{input.item}' available in stock.",
+        )
+
     if session_id not in shopping_cart:
         shopping_cart[session_id] = []
+
     shopping_cart[session_id].append({"item": input.item, "quantity": input.quantity})
     return {"results": [f"Added {input.quantity} of {input.item} to cart."]}
 
@@ -178,10 +202,28 @@ def add_to_cart(input: ShoppingCartItem, session_id: str = Query(...)):
 @app.post("/remove_from_shopping_cart", operation_id="remove_from_shopping_cart")
 def remove_from_cart(input: ShoppingCartItem, session_id: str = Query(...)):
     cart = shopping_cart.get(session_id, [])
+    match = next(
+        (
+            entry
+            for entry in cart
+            if entry["item"].lower() == input.item.lower()
+            and entry["quantity"] == input.quantity
+        ),
+        None,
+    )
+    if not match:
+        raise HTTPException(
+            status_code=404,
+            detail=f"{input.quantity} of {input.item} not found in your cart.",
+        )
+
     updated_cart = [
         entry
         for entry in cart
-        if not (entry["item"] == input.item and entry["quantity"] == input.quantity)
+        if not (
+            entry["item"].lower() == input.item.lower()
+            and entry["quantity"] == input.quantity
+        )
     ]
     shopping_cart[session_id] = updated_cart
     return {"results": [f"Removed {input.quantity} of {input.item} from cart."]}
