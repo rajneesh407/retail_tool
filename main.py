@@ -231,7 +231,37 @@ def remove_from_cart(input: ShoppingCartItem, session_id: str = Query(...)):
 
 @app.post("/view_shopping_cart", operation_id="view_shopping_cart")
 def view_cart(session_id: str = Query(...)):
-    return {"results": shopping_cart.get(session_id, [])}
+    cart = shopping_cart.get(session_id, [])
+    if not cart:
+        return {"results": []}
+
+    total = 0.0
+    detailed_cart = []
+
+    for entry in cart:
+        item_name = entry["item"]
+        quantity = entry["quantity"]
+        item_price = None
+
+        for category_items in store_data.values():
+            for item in category_items:
+                if item["name"].lower() == item_name.lower():
+                    item_price = float(item["price"].replace("$", ""))
+                    break
+            if item_price is not None:
+                break
+
+        if item_price is not None:
+            subtotal = item_price * quantity
+            total += subtotal
+            detailed_cart.append(
+                f"{quantity} x {item_name} @ ${item_price:.2f} = ${subtotal:.2f}"
+            )
+        else:
+            detailed_cart.append(f"{quantity} x {item_name} (price unavailable)")
+
+    detailed_cart.append(f"Total: ${total:.2f}")
+    return {"results": detailed_cart}
 
 
 @app.post(
