@@ -296,8 +296,11 @@ from fastapi.responses import JSONResponse
 
 @app.post("/chat/completions", )
 def chat_completions():
+    from fastapi import FastAPI, Request
     # data = request.get_json()
     # print(data)
+    data = await request.json()
+    print(data)  # log the incoming request body
     return JSONResponse(
         content={
             "id": "chatcmpl-8mcLf78g0quztp4BMtwd3hEj58Uof",
