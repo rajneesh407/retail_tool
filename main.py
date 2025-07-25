@@ -303,20 +303,27 @@ def chat_completions():
     print(data)  # log the incoming request body
     return JSONResponse(
         content={
-            "id": "chatcmpl-8mcLf78g0quztp4BMtwd3hEj58Uof",
-            "object": "chat.completion",
-            "created": int(time.time()),
-            "model": "gpt-3.5-turbo-0613",
-            "system_fingerprint": None,
-            "choices": [
-                {
-                    "index": 0,
-                    "delta": {"content": "this is me - the llm"},
-                    "logprobs": None,
-                    "finish_reason": "stop",
-                }
-            ],
+  "id": "chatcmpl-8mcLf78g0quztp4BMtwd3hEj58Uof",
+  "object": "chat.response",
+  "created": 2596150710,
+  "model": "gpt‑3.5‑turbo‑0613",
+  "output": [
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "this is me ‑ the llm"
         }
+      ]
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 1,
+    "total_tokens": 1
+  }
+}
     )
 
 # if __name__ == "__main__":
