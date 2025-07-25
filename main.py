@@ -289,7 +289,28 @@ def place_order(session_id: str = Query(...)):
     shopping_cart[session_id] = []
     return {"results": results}
 
-@app.post("/chat/completions")
+
+import time
+from flask import Flask, jsonify, request
+
+
+@app.post("/chat/completions", )
 def chat_completions():
-    
-    return jsonify("Success .. Check")
+    data = request.get_json()
+    print(data)
+    return jsonify(
+        {
+            "id": "chatcmpl-8mcLf78g0quztp4BMtwd3hEj58Uof",
+            "object": "chat.completion",
+            "created": int(time.time()),
+            "model": "gpt-3.5-turbo-0613",
+            "system_fingerprint": None,
+            "choices": [
+                {"index": 0, "delta": {"content": "this is me - the llm"}, "logprobs": None, "finish_reason": "stop"}
+            ],
+        }
+    )
+
+
+# if __name__ == "__main__":
+#     app.run(debug=True, port=5000)  # You can adjust the port if needed
