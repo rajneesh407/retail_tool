@@ -296,7 +296,7 @@ from flask import Flask, jsonify, request
 
 @app.post("/chat/completions", )
 def chat_completions():
-    data = request.get_json()
+    # data = request.get_json()
     print(data)
     return jsonify(
         {
