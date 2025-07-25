@@ -291,6 +291,5 @@ def place_order(session_id: str = Query(...)):
 
 @app.post("/chat/completions")
 def chat_completions():
-    data = request.get_json()
-   
+    
     return jsonify("Success .. Check")
