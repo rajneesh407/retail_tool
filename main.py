@@ -291,26 +291,30 @@ def place_order(session_id: str = Query(...)):
 
 
 import time
-from flask import Flask, jsonify, request
-
+# from flask import Flask, jsonify, request
+from fastapi.responses import JSONResponse
 
 @app.post("/chat/completions", )
 def chat_completions():
     # data = request.get_json()
     # print(data)
-    return jsonify(
-        {
+    return JSONResponse(
+        content={
             "id": "chatcmpl-8mcLf78g0quztp4BMtwd3hEj58Uof",
             "object": "chat.completion",
             "created": int(time.time()),
             "model": "gpt-3.5-turbo-0613",
             "system_fingerprint": None,
             "choices": [
-                {"index": 0, "delta": {"content": "this is me - the llm"}, "logprobs": None, "finish_reason": "stop"}
+                {
+                    "index": 0,
+                    "delta": {"content": "this is me - the llm"},
+                    "logprobs": None,
+                    "finish_reason": "stop",
+                }
             ],
         }
     )
-
 
 # if __name__ == "__main__":
 #     app.run(debug=True, port=5000)  # You can adjust the port if needed
