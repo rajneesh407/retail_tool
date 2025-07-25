@@ -288,3 +288,9 @@ def place_order(session_id: str = Query(...)):
 
     shopping_cart[session_id] = []
     return {"results": results}
+
+@app.post("/chat/completions")
+def chat_completions():
+    data = request.get_json()
+   
+    return jsonify("Success .. Check")
