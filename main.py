@@ -295,7 +295,7 @@ import time
 from fastapi.responses import JSONResponse
 
 @app.post("/chat/completions", )
-def chat_completions():
+await def chat_completions():
     from fastapi import FastAPI, Request
     # data = request.get_json()
     # print(data)
